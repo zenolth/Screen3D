@@ -97,20 +97,21 @@ function componentGen:Disable()
 	if not self.enabled then
 		return self
 	end
-	
+
 	self.enabled = false
-	
+
 	if self.conn then
 		self.conn:Disconnect()
 	end
-	
+
 	if self.component2D then
 		self.component2D.Parent = self.parent2D or self.screen3D.rootGui
 	end
-	
+
 	if self.surfaceGui then
 		self.surfaceGui:Destroy()
 	end
+	return self
 end
 
 function componentGen:GetViewportSize()
@@ -126,8 +127,6 @@ function componentGen:UDim2ToCFrame(position2D)
 		return CFrame.new()
 	end
 
-	local trueSize =  self.screen3D:GetRealCanvasSize()
-
 
 
 	local scaleX, scaleY = position2D.X.Scale, position2D.Y.Scale
@@ -139,7 +138,7 @@ function componentGen:UDim2ToCFrame(position2D)
 
 
 
-	local trueScaleX, trueScaleY = scaleX + offsetX/ trueSize.X , scaleY + offsetY / trueSize.Y
+	local trueScaleX, trueScaleY = scaleX +  offsetX/ viewSize.X , scaleY + offsetY / viewSize.Y
 
 
 
