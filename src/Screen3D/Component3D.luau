@@ -222,7 +222,7 @@ function componentGen:ReadWorldCFrame(): CFrame
 
 	
 	
-	return finalCFrame * Pivot(finalCFrame,finalPivot,self.offset) 
+	return finalCFrame * pivot(finalCFrame,finalPivot,self.offset) 
 end
 
 return componentGen
