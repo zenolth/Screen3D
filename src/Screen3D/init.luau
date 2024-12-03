@@ -67,4 +67,5 @@ function screenGen:GetComponent3D(Component2D)
 	return self.partIndex[Component2D]
 end
 
+print('SCREEN3D LOADED')
 return screenGen
