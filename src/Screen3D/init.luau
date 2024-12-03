@@ -1,10 +1,7 @@
 --!strict
-
-
 local componentGen = require(script.Component3D)
 local D = require(script.Definitions)
 local guiService = game:GetService('GuiService')
-
 
 
 local screenGen : D.screenGen = {} :: D.screenGen

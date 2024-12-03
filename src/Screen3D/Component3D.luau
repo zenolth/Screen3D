@@ -144,8 +144,6 @@ function componentGen:UDim2ToCFrame(position2D)
 
 	local partSize = self:GetStudsScreenSize(viewSize)
 
-	local anchorPoint = self.component2D.AnchorPoint
-
 	return CFrame.new(
 		(partSize.X) * (trueScaleX - 0.5),
 		-(partSize.Y) * (trueScaleY -0.5 ),
@@ -198,40 +196,51 @@ function componentGen:ReadWorldCFrame()
 	self:RecomputeParent()
 
 	local originalCFrame, udimPos, addedPosition
-
-
+	
+	local udimMax = self:UDim2ToCFrame(UDim2.fromScale(1,1))
+	
 	if self.parent3D then
 
 
-		if not self.parent3D.component2D then
+		if not self.parent3D.component2D or not self.parent2D then
 			return CFrame.new()
 		end
 
+
+		
 		local anchorPoint = self.parent3D.component2D.AnchorPoint
 
 		originalCFrame = self.parent3D:ReadWorldCFrame()
 		udimPos = self.parent3D.component2D.Position 
-		addedPosition = self.parent3D:UDim2ToCFrame(udimPos) * self:UDim2ToCFrame(UDim2.fromScale(-anchorPoint.X+0.5,-anchorPoint.Y+0.5))
-
+		addedPosition = 
+			self.parent3D:UDim2ToCFrame(udimPos) 
+			* udimMax  
+			* self:UDim2ToCFrame(UDim2.fromScale(-anchorPoint.X+0.5,-anchorPoint.Y+0.5))
+			* CFrame.Angles(0,0, -math.rad(self.parent2D.Rotation) ) 
 	else
 
 		local viewportDiff = self.screen3D:GetRealCanvasSize() - self.screen3D:GetIntendedCanvasSize()
 
 		originalCFrame = workspace.CurrentCamera.CFrame * CFrame.new(0,0,-(self.screen3D.displayDistance)/2 ) * self.screen3D.rootOffset
+		
 		udimPos = UDim2.new(0,viewportDiff.X/2,0,viewportDiff.Y/2)
-		addedPosition = self:UDim2ToCFrame(udimPos)
+		
+		addedPosition = self:UDim2ToCFrame(udimPos) * self:UDim2ToCFrame(UDim2.fromScale(1,1)) 
+
 	end
+	
+	
+	local finalCFrame = originalCFrame  * addedPosition
+	
+	local finalPivot =  
+		finalCFrame 
+		* udimMax:Inverse() 
+		* self:UDim2ToCFrame(self.component2D.Position) 
+		* udimMax
 
-
-
-	local finalPivot =  originalCFrame  * addedPosition 
-	local finalCFrame = finalPivot * self:UDim2ToCFrame(UDim2.fromScale(1,1)) 
-
-
-	finalPivot = finalPivot * self:UDim2ToCFrame(self.component2D.Position) * self:UDim2ToCFrame(UDim2.fromScale(1,1)) 
-
-
-	return finalCFrame * Pivot(finalCFrame,finalPivot,self.offset)
+	
+	
+	return finalCFrame * Pivot(finalCFrame,finalPivot,self.offset) 
 end
 
 
