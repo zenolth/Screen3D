@@ -14,6 +14,7 @@ function componentGen.new(Component2D, Screen3D)
 	local self = setmetatable(
 		{
 			enabled = false,
+			_compatibility = false,
 
 			component2D = Component2D,
 			surfaceGui = nil,
@@ -26,7 +27,7 @@ function componentGen.new(Component2D, Screen3D)
 
 			conn = nil
 		},
-		
+
 		componentGen
 	)
 
@@ -37,6 +38,39 @@ function componentGen.new(Component2D, Screen3D)
 	end
 
 	return self
+end
+
+function componentGen:EnableCompatibility()
+	
+	if not self.parent2D then
+		warn('COMPATIBILITY MODE DOES NOT WORK ON COMPONENTS WITH SCREENGUI PARENTS.')
+		return self:Enable()
+	end
+	
+	self._compatibility = true
+
+	local Container0 , Container1 = Instance.new('Frame'), Instance.new('Frame')
+
+	Container0.Name = '3DCONTAINER'
+	Container1.Name = '3DCONTAINER'
+
+	Container0.Parent = self.parent2D or self.screen3D.rootGui
+	Container1.Parent = Container0
+
+	Container0.BackgroundTransparency = 1
+	Container1.BackgroundTransparency = 1
+
+	local Container3D_0, Container3D_1 = componentGen.new(Container0,self.screen3D), componentGen.new(Container1,self.screen3D)
+
+	self.screen3D.partIndex[Container0], self.screen3D.partIndex[Container1] = Container3D_0, Container3D_1
+
+	self.compatibilityParent3D = self.parent3D
+	self.compatibilityParent2D = self.parent2D
+
+	self.parent2D = Container1
+	self.parent3D = Container3D_1
+
+	return self:Enable()
 end
 
 function componentGen:Enable()
@@ -64,13 +98,32 @@ function componentGen:Enable()
 
 	--self:RecomputeParent()
 
-	self.conn = RunService.RenderStepped:Connect(function(deltaTime: number)
+	self.conn = game:GetService('HttpService'):GenerateGUID(false)
+	RunService:BindToRenderStep(self.conn,Enum.RenderPriority.Last.Value + 2,function(deltaTime: number)
+
 		if self.conn and not (self.surfaceGui and surfacePart) then
-			self.conn:Disconnect()
+			RunService:UnbindFromRenderStep(self.conn)
 			return
 		end
 
+
+
 		local viewportSize = self:GetViewportSize()
+
+		if self._compatibility and self.parent2D and self.parent3D and self.parent3D.parent2D and self.compatibilityParent2D then
+			
+			local c_parent = self.compatibilityParent2D
+
+			self.parent3D.parent2D.AnchorPoint = self.component2D.AnchorPoint
+
+			self.parent3D.parent2D.Position = self.component2D.Position
+			self.parent2D.Position = UDim2.fromOffset(-self.component2D.AbsolutePosition.X,-self.component2D.AbsolutePosition.Y)
+
+
+			self.parent2D.Size = UDim2.fromOffset(c_parent.AbsoluteSize.X,c_parent.AbsoluteSize.Y)
+			self.parent3D.parent2D.Size = UDim2.fromOffset(self.component2D.AbsoluteSize.X,self.component2D.AbsoluteSize.Y)
+		end
+
 
 		self.viewportSize = viewportSize
 
@@ -91,17 +144,26 @@ function componentGen:Disable()
 	self.enabled = false
 
 	if self.conn then
-		self.conn:Disconnect()
+		RunService:UnbindFromRenderStep(self.conn)
 	end
 
 	if self.component2D then
-		self.component2D.Parent = self.parent2D or self.screen3D.rootGui
+
+		if self._compatibility then
+
+			self.component2D.Parent = self.compatibilityParent2D or self.screen3D.rootGui
+
+		else
+
+			self.component2D.Parent = self.parent2D or self.screen3D.rootGui
+
+		end
 	end
 
 	if self.surfaceGui then
 		self.surfaceGui:Destroy()
 	end
-	
+
 	return self
 end
 
@@ -109,7 +171,7 @@ function componentGen:GetViewportSize(): Vector2
 	if self.parent3D and self.parent3D.component2D then
 		return self.parent3D.component2D.AbsoluteSize
 	end
-	
+
 	return self.screen3D:GetIntendedCanvasSize()
 end
 
@@ -122,7 +184,7 @@ function componentGen:UDim2ToCFrame(position2D: UDim2): CFrame
 	local offsetX, offsetY = position2D.X.Offset, position2D.Y.Offset
 
 	local viewSize = self:GetViewportSize()
-	
+
 	local partSize = self:GetStudsScreenSize(viewSize)
 	local trueScaleX, trueScaleY = scaleX +  offsetX/ viewSize.X , scaleY + offsetY / viewSize.Y
 
@@ -159,16 +221,26 @@ function componentGen:RecomputeParent()
 	if self.surfaceGui then
 		local parent = self.parent3D
 		local zIndex = 0
-		
+
 		while parent do
 			zIndex += 1
 			parent = parent.parent3D
 		end
-		
+
 		self.surfaceGui.ZOffset = zIndex
 	end
 
 	return self
+end
+
+function componentGen:GetCompatibilityPosition()
+	if not self.enabled and self.component2D and self.parent3D and self.parent3D.component2D then-- everyone is say "hey yqat, add modifiers", well i made modifiers, here is my modifiers
+
+		local offset = (self.component2D.AbsolutePosition - self.parent3D.component2D.AbsolutePosition)
+		--+ (   (self.component2D.AnchorPoint)  * self.component2D.AbsoluteSize)
+		return UDim2.fromOffset(offset.X, offset.Y)
+	end
+	return UDim2.new(0,0,0,0)
 end
 
 function componentGen:ReadWorldCFrame(): CFrame
@@ -179,9 +251,9 @@ function componentGen:ReadWorldCFrame(): CFrame
 	self:RecomputeParent()
 
 	local originalCFrame, udimPos, addedPosition
-	
+
 	local udimMax = self:UDim2ToCFrame(UDim2.fromScale(1,1))
-	
+
 	if self.parent3D then
 
 
@@ -190,38 +262,64 @@ function componentGen:ReadWorldCFrame(): CFrame
 		end
 
 
-		
+
 		local anchorPoint = self.parent3D.component2D.AnchorPoint
 
 		originalCFrame = self.parent3D:ReadWorldCFrame()
+
+
+
 		udimPos = self.parent3D.component2D.Position 
+
+		local anchorFrame = self:UDim2ToCFrame(UDim2.fromScale(-anchorPoint.X+0.5,-anchorPoint.Y+0.5))
+
+		if not self.parent3D.enabled and self.parent3D.parent3D and self.parent3D.parent3D.component2D then 
+
+			udimPos  = self.parent3D:GetCompatibilityPosition()
+
+
+			--anchorFrame = self:UDim2ToCFrame(UDim2.fromScale(0.5,0.5))
+			--anchorFrame = self:UDim2ToCFrame(UDim2.fromScale(0,0))
+			anchorFrame = CFrame.new()
+		end
+
 		addedPosition = 
-			self.parent3D:UDim2ToCFrame(udimPos) 
-			* udimMax  
-			* self:UDim2ToCFrame(UDim2.fromScale(-anchorPoint.X+0.5,-anchorPoint.Y+0.5))
+			self.parent3D:UDim2ToCFrame(udimPos)
+			* udimMax
+			* anchorFrame
 			* CFrame.Angles(0,0, -math.rad(self.parent2D.Rotation) ) 
+
 	else
+
 		local viewportDiff = self.screen3D:GetRealCanvasSize() - self.screen3D:GetIntendedCanvasSize()
 
 		originalCFrame = workspace.CurrentCamera.CFrame * CFrame.new(0,0,-(self.screen3D.displayDistance)/2 ) * self.screen3D.rootOffset
-		
+
 		udimPos = UDim2.new(0,viewportDiff.X/2,0,viewportDiff.Y/2)
-		
+
 		addedPosition = self:UDim2ToCFrame(udimPos) * self:UDim2ToCFrame(UDim2.fromScale(1,1)) 
 
 	end
-	
-	
+
+
 	local finalCFrame = originalCFrame  * addedPosition
-	
+
+	local componentPosition = self.component2D.Position
+
+
+	if not self.enabled and self.parent3D and self.parent3D.component2D and not self.parent3D.enabled then --whoever thinks that hell should be empty has never seen THIS...
+
+		componentPosition = self:GetCompatibilityPosition()
+	end
+
 	local finalPivot =  
 		finalCFrame 
 		* udimMax:Inverse() 
-		* self:UDim2ToCFrame(self.component2D.Position) 
+		* self:UDim2ToCFrame(componentPosition) 
 		* udimMax
 
-	
-	
+
+
 	return finalCFrame * pivot(finalCFrame,finalPivot,self.offset) 
 end
 
