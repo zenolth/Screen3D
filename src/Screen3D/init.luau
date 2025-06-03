@@ -32,11 +32,6 @@ function screenGen.new(screenGui: ScreenGui, displayDistance: number)
 			partIndex[AddedComponent] = Component3D.new(AddedComponent,self)
 		end
 
-		for _,Component2D in AddedComponent:GetDescendants() do
-			if Component2D:IsA("GuiObject") and not partIndex[Component2D] then
-				partIndex[Component2D] = Component3D.new(Component2D,self)
-			end
-		end
 	end)
 
 	return self 
