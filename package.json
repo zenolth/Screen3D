@@ -1,0 +1,23 @@
+{
+    "name": "@rbxts/screen3d",
+    "description": "3D UI that just works. Now with TypeScript types!",
+    "version": "1.0.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zenolth/Screen3D"
+    },
+    "keywords": [],
+    "license": "AGPL-3.0-only",
+    "main": "src/Screen3D/init.luau",
+    "types": "src/index.d.ts",
+    "files": ["src/","LICENSE","README.md"],
+    "publishConfig": {
+        "access": "public"
+    },
+    "type": "module",
+    "devDependencies": {
+        "@rbxts/compiler-types": "^1.3.3-types.1",
+        "@rbxts/types": "^1.0.705",
+        "typescript": "^5.1.6"
+    }
+}
