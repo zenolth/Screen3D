@@ -15,7 +15,7 @@ jobs:
             bun-version: 'latest'
             registry-url: 'https://registry.npmjs.org'
         - name: Install dependencies
-          run: bunx npm install
+          run: bun install
         - name: Publish package on NPM
           run: bun publish
           env:
