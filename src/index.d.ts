@@ -1,20 +1,20 @@
-interface component3D {
+interface component3D<T extends GuiObject> {
     enabled : boolean;
 			
-    component2D : GuiObject | undefined;
-    surfaceGui : SurfaceGui | undefined;
+    component2D : T;
+    surfaceGui : SurfaceGui;
     
     parent2D : GuiObject | undefined;
     screen3D : screen3D,
-    parent3D : component3D | undefined,
+    parent3D : component3D<GuiObject> | undefined,
 
     offset : CFrame,
     viewportSize : Vector2,
 
     conn : RBXScriptConnection | undefined;
 
-    Enable(): component3D;
-	Disable(): component3D;
+    Enable(): component3D<T>;
+	Disable(): component3D<T>;
 	RecomputeParent(): void;
 	
 	GetStudsScreenSize(viewportSize : Vector2): Vector3;
@@ -23,17 +23,17 @@ interface component3D {
 	GetViewportSize(): CFrame;
 }
 
-interface componentGen {
-    new(Component2D: GuiObject, Screen3D: screen3D): component3D;
+interface componentGen<T extends GuiObject> {
+    new(Component2D: GuiObject, Screen3D: screen3D): component3D<T>;
 }
 
 interface screen3D {
-    partIndex : Map<GuiObject,component3D>,
+    partIndex : Map<GuiObject,component3D<GuiObject>>,
     rootGui : ScreenGui,
     displayDistance : number,
     rootOffset : CFrame
 
-    GetComponent3D(Component2D: GuiObject): component3D;
+    GetComponent3D<T extends GuiObject>(Component2D: T): component3D<T>;
     GetRealCanvasSize(): Vector2;
 	GetInsetCanvasSize(): Vector2;
 	GetIntendedCanvasSize(): Vector2;
