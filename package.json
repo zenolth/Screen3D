@@ -1,7 +1,7 @@
 {
     "name": "@rbxts/screen3d",
     "description": "3D UI that just works. Now with TypeScript types!",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "repository": {
         "type": "git",
         "url": "https://github.com/zenolth/Screen3D"
